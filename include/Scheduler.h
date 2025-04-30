@@ -5,12 +5,12 @@
 #include "readyQueue.h"
 
 // Function to perform FCFS scheduling
-void startFCFS(JobPool* jobPool, ReadyQueue* readyQueue);
+void startFCFS(ReadyQueue* readyQueue);
 
 // Function to perform Round Robin scheduling (not implemented yet)
-void startRoundRobin(JobPool* jobPool, ReadyQueue* readyQueue, int quantum);
+void startRoundRobin(ReadyQueue* readyQueue, int quantum);
 
 // Function to perform Multilevel Feedback Queue scheduling (not implemented yet)
-void mlfq_schedule(JobPool* jobPool, ReadyQueue* queues[4]);
+void mlfq_schedule(ReadyQueue* queues[4]);
 
 #endif
