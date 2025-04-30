@@ -6,15 +6,13 @@
 
 
 int main() {
-    initializeProcessFromFile("../Program_1.txt", 1);
-    initializeProcessFromFile("../Program_2.txt", 2);
-    initializeProcessFromFile("../Program_3.txt", 3);
+    initializeProcessFromFile("../Program_1.txt", 1, generalReadyQueue);
+    initializeProcessFromFile("../Program_2.txt", 2, generalReadyQueue);
+    initializeProcessFromFile("../Program_3.txt", 3, generalReadyQueue);
     for (int i = 0; i < 60; i++) {
         if (memory[i].name[0] != '\0') {  
             printf("%s\n", memory[i].data);  
         }
     }
-    printf("\n");
-
-    
+    printf("\n"); 
 }

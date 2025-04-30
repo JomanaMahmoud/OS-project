@@ -14,8 +14,8 @@ typedef struct PCB {
 } PCB;
 
 
-PCB createPCB(int pid, int priority, int lower, int upper); 
-void printPCB(PCB pcb);
+PCB* createPCB(int pid, int priority, int lower, int upper); 
+void printPCB(PCB* pcb);
 int processFinished(PCB* p);
 
 #endif

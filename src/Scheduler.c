@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "process.h"
-#include "gui.h"
 #include "readyQueue.h"
 #include "interpreter.h"
 #include "Scheduler.h"
@@ -44,15 +43,14 @@ void addArrivedProcessesToReadyQueue(ReadyQueue* readyQueue, int clockCycle) {
             }
 
             if (arrival_time <= clockCycle && strcmp(state, "NEW") == 0) {
-                PCB newPCB;
-                newPCB.pid = pid;
-                newPCB.arrival_time = arrival_time;
-                newPCB.state = READY;  
-
-                newPCB.programCounter = programCounter;
-                newPCB.memoryLowerBound = memoryLowerBound;
-                newPCB.memoryUpperBound = memoryUpperBound;
-                newPCB.priority = priority;
+                PCB* newPCB;
+                newPCB->pid = pid;
+                newPCB->arrival_time = arrival_time;
+                strcpy(newPCB->state, "READY");
+                newPCB->programCounter = programCounter;
+                newPCB->memoryLowerBound = memoryLowerBound;
+                newPCB->memoryUpperBound = memoryUpperBound;
+                newPCB->priority = priority;
 
                 enqueueReadySortedByArrival(readyQueue, newPCB);
 
@@ -79,10 +77,23 @@ void startFCFS(ReadyQueue* readyQueue) {
 
         PCB* currentProcess = dequeueReady(readyQueue);
 
-        if (currentProcess != NULL) {
-            currentProcess->state = READY;
+        if (currentProcess->programCounter < currentProcess->memoryLowerBound || currentProcess->programCounter > currentProcess->memoryUpperBound) {
+            printf("Process %d has completed its memory segment.\n", currentProcess->pid);
+            return;
+        }
+        
+        MemoryCell cell = memory[currentProcess->programCounter];
+        
+        if (!cell.isInstruction) {
+            // Skip non-instruction cells like variables
+            currentProcess->programCounter++;
+            return;
+        }
 
-            executeInstruction(currentProcess);
+
+        if (currentProcess != NULL) {
+            strcpy(currentProcess->state, "RUNNING");
+            executeInstruction(cell.data, currentProcess->pid, currentProcess->priority);
             clockCycle++;
         } else {
             // No process ready, just increment clock
@@ -103,20 +114,31 @@ void startRoundRobin(ReadyQueue* readyQueue, int quantum) {
         PCB* currentProcess = dequeueReady(readyQueue);
         int quantumCounter = 0;
 
-        if (currentProcess != NULL) {
-            currentProcess->state = READY;
+        if (currentProcess->programCounter < currentProcess->memoryLowerBound || currentProcess->programCounter > currentProcess->memoryUpperBound) {
+            printf("Process %d has completed its memory segment.\n", currentProcess->pid);
+            return;
+        }
+        
+        MemoryCell cell = memory[currentProcess->programCounter];
+        
+        if (!cell.isInstruction) {
+            // Skip non-instruction cells like variables
+            currentProcess->programCounter++;
+            return;
+        }
 
-            
+        if (currentProcess != NULL) {
+            strcpy(currentProcess->state, "RUNNING");
 
             while (quantumCounter < quantum && !processFinished(currentProcess)) {
-                executeInstruction(currentProcess);
+                executeInstruction(cell.data, currentProcess->pid, currentProcess->priority);
                 clockCycle++;
                 quantumCounter++;
                 updateGUI();
             }
 
             if (!processFinished(currentProcess)) {
-                enqueueReadySortedByArrival(readyQueue, *currentProcess);
+                enqueueReadySortedByArrival(readyQueue, currentProcess);
             }
         } else {
             clockCycle++;
@@ -142,11 +164,24 @@ void mlfq_schedule(ReadyQueue* queues[4]) {
             if (!isReadyQueueEmpty(queues[level])) {
                 foundProcess = 1;
 
+                
+
                 PCB* p = dequeueReady(queues[level]);
-                currentProcess->state = READY;
+                strcpy(p->state, "RUNNING");
 
+                if (p->programCounter < p->memoryLowerBound || p->programCounter > p->memoryUpperBound) {
+                    printf("Process %d has completed its memory segment.\n", p->pid);
+                    return;
+                }
+                
+                MemoryCell cell = memory[p->programCounter];
+                
+                if (!cell.isInstruction) {
+                    // Skip non-instruction cells like variables
+                    p->programCounter++;
+                    return;
+                }
 
-            
                 int quantum = quantums[level];
 
                 if (level == 3) {
@@ -159,7 +194,7 @@ void mlfq_schedule(ReadyQueue* queues[4]) {
                     MemoryCell cell = read_from_memory(p->programCounter);
 
                     if (cell.data[0] != '\0') {
-                        executeInstruction(cell.data);
+                        executeInstruction(cell.data, p->pid, p->priority);
                     }
 
                     p->programCounter++;
@@ -169,17 +204,15 @@ void mlfq_schedule(ReadyQueue* queues[4]) {
 
                 if (p->programCounter > p->memoryUpperBound) {
                     // Finished
-                    currentProcess->state = READY;
-
+                    strcpy(p->state, "READY");
                 } else {
                     // Still has instructions
-                    currentProcess->state = READY;
-
+                    strcpy(p->state, "READY");
 
                     if (level < 3) {
-                        enqueueReadySortedByArrival(queues[level + 1], *p);
+                        enqueueReadySortedByArrival(queues[level + 1], p);
                     } else {
-                        enqueueReadySortedByArrival(queues[3], *p);
+                        enqueueReadySortedByArrival(queues[3], p);
                     }
                 }
 

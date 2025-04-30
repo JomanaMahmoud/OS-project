@@ -15,9 +15,9 @@ int isReadyQueueFull(ReadyQueue* q) {
     return q->count == MAX_PROCESSES;
 }
 
-void enqueueReadySortedByArrival(ReadyQueue* q, PCB pcb) {
+void enqueueReadySortedByArrival(ReadyQueue* q, PCB* pcb) {
     if (isReadyQueueFull(q)) {
-        printf("Ready Queue is full. Cannot add process %d\n", pcb.pid);
+        printf("Ready Queue is full. Cannot add process %d\n", pcb->pid);
         return;
     }
 
@@ -28,7 +28,7 @@ void enqueueReadySortedByArrival(ReadyQueue* q, PCB pcb) {
     // Shift elements to the right to make space
     while (q->count > 0) {
         int prevIndex = (i + MAX_PROCESSES) % MAX_PROCESSES;
-        if (q->queue[prevIndex].arrival_time <= pcb.arrival_time) {
+        if (q->queue[prevIndex]->arrival_time <= pcb->arrival_time) {
             break;
         }
         q->queue[insertPos] = q->queue[prevIndex];
@@ -46,7 +46,7 @@ PCB* dequeueReady(ReadyQueue* q) {
         printf("Ready Queue is empty.\n");
         return NULL;  // Return NULL if the queue is empty
     }
-    PCB* p = &q->queue[q->front];  // Return a pointer to the first PCB in the queue
+    PCB* p = &q->queue[q->front];  // Return a pointer to the first PCB* in the queue
     q->front = (q->front + 1) % MAX_PROCESSES;
     q->count--;
     return p;  // Return the pointer to the PCB

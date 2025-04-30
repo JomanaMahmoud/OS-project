@@ -2,21 +2,24 @@
 #define INTERPRETER_H
 
 #include "memory.h"  // Include memory handling header for memory-related functions
-#include "process.h" // Include process header for PCB definition
+#include "process.h" // Include process header for PCB*definition
+#include "blockedQueue.h"
+#include "readyQueue.h"
 
-
+BlockedQueue generalBlockedQueue;
+ReadyQueue generalReadyQueue;
 // Function prototypes
 
-// Function to store the PCB fields into memory
-void storePCBInMemory(PCB pcb);
+// Function to store the PCB* fields into memory
+void storePCBInMemory(PCB* pcb);
 
-// Function to initialize a process from a file and store its PCB and instructions in memory
+// Function to initialize a process from a file and store its PCB* and instructions in memory
 void initializeProcessFromFile(const char* filename, int priority);
 
 // Helper functions (if needed for internal operations)
-PCB createPCB(int pid, int priority, int memoryLowerBound, int memoryUpperBound);
-void printPCB(PCB pcb);
-void executeInstruction(char* instruction);
+PCB* createPCB(int pid, int priority, int memoryLowerBound, int memoryUpperBound);
+void printPCB(PCB* pcb);
+void executeInstruction(char* instruction, int processid, int processpriority);
 // Optionally, external memory management functions (you may have to define them in memory.h)
 // void write_to_memory(int address, const char* name, const char* value, int isInstruction);
 
