@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "process.h"
+#include "gui.h"
 #include "readyQueue.h"
 #include "interpreter.h"
 #include "Scheduler.h"
@@ -46,7 +47,8 @@ void addArrivedProcessesToReadyQueue(ReadyQueue* readyQueue, int clockCycle) {
                 PCB newPCB;
                 newPCB.pid = pid;
                 newPCB.arrival_time = arrival_time;
-                strcpy(newPCB.state, "READY");
+                newPCB.state = READY;  
+
                 newPCB.programCounter = programCounter;
                 newPCB.memoryLowerBound = memoryLowerBound;
                 newPCB.memoryUpperBound = memoryUpperBound;
@@ -78,7 +80,8 @@ void startFCFS(ReadyQueue* readyQueue) {
         PCB* currentProcess = dequeueReady(readyQueue);
 
         if (currentProcess != NULL) {
-            strcpy(currentProcess->state, "RUNNING");
+            currentProcess->state = READY;
+
             executeInstruction(currentProcess);
             clockCycle++;
         } else {
@@ -101,7 +104,9 @@ void startRoundRobin(ReadyQueue* readyQueue, int quantum) {
         int quantumCounter = 0;
 
         if (currentProcess != NULL) {
-            strcpy(currentProcess->state, "RUNNING");
+            currentProcess->state = READY;
+
+            
 
             while (quantumCounter < quantum && !processFinished(currentProcess)) {
                 executeInstruction(currentProcess);
@@ -138,8 +143,10 @@ void mlfq_schedule(ReadyQueue* queues[4]) {
                 foundProcess = 1;
 
                 PCB* p = dequeueReady(queues[level]);
-                strcpy(p->state, "RUNNING");
+                currentProcess->state = READY;
 
+
+            
                 int quantum = quantums[level];
 
                 if (level == 3) {
@@ -162,10 +169,12 @@ void mlfq_schedule(ReadyQueue* queues[4]) {
 
                 if (p->programCounter > p->memoryUpperBound) {
                     // Finished
-                    strcpy(p->state, "READY");
+                    currentProcess->state = READY;
+
                 } else {
                     // Still has instructions
-                    strcpy(p->state, "READY");
+                    currentProcess->state = READY;
+
 
                     if (level < 3) {
                         enqueueReadySortedByArrival(queues[level + 1], *p);

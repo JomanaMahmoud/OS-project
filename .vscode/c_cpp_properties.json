@@ -1,0 +1,43 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "{",
+                "    \"configurations\": [",
+                "        {",
+                "            \"name\": \"Linux\",",
+                "            \"intelliSenseMode\": \"gcc-x64\",",
+                "            \"includePath\": [",
+                "                \"/usr/include\",",
+                "                \"/usr/local/include\",",
+                "                \"/usr/include/c++/9\", // or any other version of GCC",
+                "                \"${workspaceFolder}/**\"",
+                "            ],",
+                "            \"defines\": [],",
+                "            \"compilerPath\": \"/usr/bin/gcc\",",
+                "            \"cStandard\": \"c11\",",
+                "            \"cppStandard\": \"c++17\",",
+                "            \"browse\": {",
+                "                \"path\": [",
+                "                    \"/usr/include\",",
+                "                    \"/usr/local/include\"",
+                "                ],",
+                "                \"limitSymbolsToIncludedHeaders\": true",
+                "            }",
+                "        }",
+                "    ],",
+                "    \"version\": 4",
+                "}"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerPath": "C:/msys64/ucrt64/bin/g++.exe"
+        }
+    ],
+    "version": 4
+}
