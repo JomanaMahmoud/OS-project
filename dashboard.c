@@ -34,6 +34,8 @@ typedef struct {
     int isCreated;
 } ProcessRegistration;
 extern ProcessRegistration pendingProcesses[3];
+extern char schedulerName[32];
+
 
 // GTK widgets
 static GtkWidget *window;
@@ -48,8 +50,14 @@ static GtkTextBuffer *ready_queue_buffer;
 static GtkTextBuffer *blocked_queue_buffer;
 static GtkTextBuffer *running_process_buffer;
 static GtkTextBuffer *pending_processes_buffer;
+static GtkWidget *scheduler_name_label;
+static GtkWidget *processes_list_view; // New widget for processes list
+static GtkTextBuffer *processes_list_buffer;
+
+
 
 // Function declarations
+void printAllProcesses();
 void printReadyQueue();
 void printBlockedQueue(struct Queue* q);
 void printPendingProcesses();
@@ -249,6 +257,46 @@ void capture_pending_processes_output() {
     remove("pending_processes_output.txt");
 }
 
+// Placeholder function for process list - to be implemented
+void update_processes_list() {
+        FILE *original_stdout = stdout;
+        FILE *temp_file = fopen("all_processes_output.txt", "w");
+        if (!temp_file) {
+            perror("Could not open all_processes_output.txt");
+            return;
+        }
+    
+        fflush(stdout);
+        stdout = temp_file;
+    
+        // Call the backend function
+        printAllProcesses();
+    
+        fflush(stdout);
+        stdout = original_stdout;
+        fclose(temp_file);
+    
+        FILE *input = fopen("all_processes_output.txt", "r");
+        if (!input) {
+            perror("Could not read all_processes_output.txt");
+            return;
+        }
+    
+        fseek(input, 0, SEEK_END);
+        long len = ftell(input);
+        fseek(input, 0, SEEK_SET);
+    
+        char *contents = malloc(len + 1);
+        fread(contents, 1, len, input);
+        contents[len] = '\0';
+        fclose(input);
+    
+        gtk_text_buffer_set_text(processes_list_buffer, contents, -1);
+        free(contents);
+        remove("all_processes_output.txt");
+    }
+
+
 // Update system statistics
 static void update_system_stats() {
     char buf[128];
@@ -263,6 +311,9 @@ static void update_system_stats() {
     // Update pending count
     snprintf(buf, sizeof(buf), "⏳ Pending Count: %d", pendingCount);
     gtk_label_set_text(GTK_LABEL(pending_count_label), buf);
+
+    snprintf(buf, sizeof(buf), "🔄 Scheduler: %s", schedulerName);
+    gtk_label_set_text(GTK_LABEL(scheduler_name_label), buf);
 }
 
 // Periodic GUI update
@@ -275,6 +326,7 @@ static gboolean on_timeout(gpointer user_data) {
     capture_blocked_queue_output();
     capture_running_process_output();
     capture_pending_processes_output();
+    update_processes_list(); // Update the processes list (placeholder)
 
     return TRUE; // Continue the timer
 }
@@ -298,11 +350,13 @@ static GtkWidget* create_header_section() {
     clock_label = create_styled_label("⏱️ Clock Cycle: 0", "data-label");
     process_count_label = create_styled_label("💻 Total Processes: 3", "data-label");
     pending_count_label = create_styled_label("⏳ Pending Count: 0", "data-label");
-    
+    scheduler_name_label = create_styled_label("🔄 Scheduler:", "data-label");
+
     // Add labels to stats box
     gtk_box_pack_start(GTK_BOX(stats_box), clock_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(stats_box), process_count_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(stats_box), pending_count_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(stats_box), scheduler_name_label, FALSE, FALSE, 0);
     
     // Add stats box to header
     gtk_box_pack_start(GTK_BOX(header_box), stats_box, FALSE, FALSE, 0);
@@ -310,16 +364,14 @@ static GtkWidget* create_header_section() {
     return header_box;
 }
 
-// Create queues section
+// Create left pane for queues
 static GtkWidget* create_queues_section() {
-    // Main container
+    // Main container for all queue displays
     GtkWidget *queues_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_widget_set_margin_start(queues_box, 20);
-    gtk_widget_set_margin_end(queues_box, 20);
+    gtk_widget_set_margin_start(queues_box, 10);
+    gtk_widget_set_margin_end(queues_box, 5);
     gtk_widget_set_margin_top(queues_box, 10);
-    
-    // Horizontal box for ready and blocked queues
-    GtkWidget *queues_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_widget_set_margin_bottom(queues_box, 10);
     
     // Ready Queue Section
     GtkWidget *ready_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -327,6 +379,7 @@ static GtkWidget* create_queues_section() {
     ready_queue_view = create_styled_text_view(&ready_queue_buffer, "ready-queue");
     gtk_box_pack_start(GTK_BOX(ready_box), ready_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(ready_box), ready_queue_view, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(queues_box), ready_box, TRUE, TRUE, 0);
     
     // Blocked Queue Section
     GtkWidget *blocked_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -334,10 +387,7 @@ static GtkWidget* create_queues_section() {
     blocked_queue_view = create_styled_text_view(&blocked_queue_buffer, "blocked-queue");
     gtk_box_pack_start(GTK_BOX(blocked_box), blocked_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(blocked_box), blocked_queue_view, TRUE, TRUE, 0);
-    
-    // Add queues to horizontal box
-    gtk_box_pack_start(GTK_BOX(queues_hbox), ready_box, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(queues_hbox), blocked_box, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(queues_box), blocked_box, TRUE, TRUE, 0);
     
     // Running Process Section
     GtkWidget *running_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -345,29 +395,35 @@ static GtkWidget* create_queues_section() {
     running_process_view = create_styled_text_view(&running_process_buffer, "running-process");
     gtk_box_pack_start(GTK_BOX(running_box), running_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(running_box), running_process_view, TRUE, TRUE, 0);
-    
-    // Add all sections to main container
-    gtk_box_pack_start(GTK_BOX(queues_box), queues_hbox, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(queues_box), running_box, TRUE, TRUE, 0);
+    
+    // Pending Processes Section
+    GtkWidget *pending_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    GtkWidget *pending_label = create_styled_label("Pending Processes", "queue-title-label");
+    pending_processes_view = create_styled_text_view(&pending_processes_buffer, "pending-processes");
+    gtk_box_pack_start(GTK_BOX(pending_box), pending_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(pending_box), pending_processes_view, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(queues_box), pending_box, TRUE, TRUE, 0);
     
     return queues_box;
 }
 
-// Create pending processes section
-static GtkWidget* create_pending_section() {
-    GtkWidget *pending_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_widget_set_margin_start(pending_box, 20);
-    gtk_widget_set_margin_end(pending_box, 20);
-    gtk_widget_set_margin_top(pending_box, 10);
-    gtk_widget_set_margin_bottom(pending_box, 20);
+// Create right pane for process list
+static GtkWidget* create_processes_list_section() {
+    GtkWidget *processes_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_widget_set_margin_start(processes_box, 5);
+    gtk_widget_set_margin_end(processes_box, 10);
+    gtk_widget_set_margin_top(processes_box, 10);
+    gtk_widget_set_margin_bottom(processes_box, 10);
     
-    GtkWidget *pending_label = create_styled_label("Pending Processes", "queue-title-label");
-    pending_processes_view = create_styled_text_view(&pending_processes_buffer, "pending-processes");
+    GtkWidget *processes_label = create_styled_label("Process List", "queue-title-label");
+    gtk_box_pack_start(GTK_BOX(processes_box), processes_label, FALSE, FALSE, 0);
     
-    gtk_box_pack_start(GTK_BOX(pending_box), pending_label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(pending_box), pending_processes_view, TRUE, TRUE, 0);
+    // Create text view for processes list (fixed version)
+    processes_list_view = create_styled_text_view(&processes_list_buffer, "processes-list");
+    gtk_box_pack_start(GTK_BOX(processes_box), processes_list_view, TRUE, TRUE, 0);
     
-    return pending_box;
+    return processes_box;
 }
 
 void create_gui(void) {
@@ -376,46 +432,43 @@ void create_gui(void) {
 
     // Create main window
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Main Dashboard");
-    gtk_window_set_default_size(GTK_WINDOW(window), 900, 700);
+    gtk_window_set_title(GTK_WINDOW(window), "OS Task Dashboard");
+    gtk_window_set_default_size(GTK_WINDOW(window), 1000, 800);
     gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    // Create overlay for background
-    GtkWidget *overlay = gtk_overlay_new();
-    gtk_container_add(GTK_CONTAINER(window), overlay);
+    // Create main vertical box
+    GtkWidget *main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(window), main_box);
 
-   
-
-    // Main container for all UI elements
-    GtkWidget *main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_widget_set_halign(main_box, GTK_ALIGN_FILL);
-    gtk_widget_set_valign(main_box, GTK_ALIGN_FILL);
-    gtk_widget_set_hexpand(main_box, TRUE);
-    gtk_widget_set_vexpand(main_box, TRUE);
-    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), main_box);
-
-    // Add header section
+    // Add header section (will remain fixed at top)
     gtk_box_pack_start(GTK_BOX(main_box), create_header_section(), FALSE, FALSE, 0);
     
-    // Add separator
-    GtkWidget *separator1 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
-    gtk_widget_set_margin_start(separator1, 20);
-    gtk_widget_set_margin_end(separator1, 20);
-    gtk_box_pack_start(GTK_BOX(main_box), separator1, FALSE, FALSE, 10);
+    // Add separator below header
+    GtkWidget *separator = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_widget_set_margin_start(separator, 10);
+    gtk_widget_set_margin_end(separator, 10);
+    gtk_box_pack_start(GTK_BOX(main_box), separator, FALSE, FALSE, 10);
     
-    // Add queues section
-    gtk_box_pack_start(GTK_BOX(main_box), create_queues_section(), TRUE, TRUE, 0);
+    // Create horizontal box for split view (queues left, processes right)
+    GtkWidget *content_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_start(GTK_BOX(main_box), content_box, TRUE, TRUE, 0);
     
-    // Add separator
-    GtkWidget *separator2 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
-    gtk_widget_set_margin_start(separator2, 20);
-    gtk_widget_set_margin_end(separator2, 20);
-    gtk_box_pack_start(GTK_BOX(main_box), separator2, FALSE, FALSE, 10);
+    // Create paned container to allow resizing the split
+    GtkWidget *paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_box_pack_start(GTK_BOX(content_box), paned, TRUE, TRUE, 0);
     
-    // Add pending processes section
-    gtk_box_pack_start(GTK_BOX(main_box), create_pending_section(), TRUE, TRUE, 0);
-
+    // Add left section (queues)
+    gtk_paned_pack1(GTK_PANED(paned), create_queues_section(), TRUE, FALSE);
+    
+    // We don't need to explicitly add a separator - the paned widget has a built-in handle
+    
+    // Add right section (processes list - placeholder for future implementation)
+    gtk_paned_pack2(GTK_PANED(paned), create_processes_list_section(), TRUE, FALSE);
+    
+    // Set initial position for the paned split (40% for queues, 60% for processes)
+    gtk_paned_set_position(GTK_PANED(paned), 400);
+    
     // Load CSS styling
     GtkCssProvider *provider = gtk_css_provider_new();
     GdkScreen *screen = gdk_screen_get_default();
@@ -428,6 +481,17 @@ void create_gui(void) {
         g_printerr("Error loading CSS file: %s\n", error->message);
         g_clear_error(&error);
     }
+
+    // Add additional CSS for new layout
+    const char* extra_css = 
+        "paned { background-color: #333333; }"
+        "textview.processes-list { border: 2px solid #9c27b0; }";
+    
+    GtkCssProvider *extra_provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(extra_provider, extra_css, -1, NULL);
+    gtk_style_context_add_provider_for_screen(screen,
+        GTK_STYLE_PROVIDER(extra_provider),
+        GTK_STYLE_PROVIDER_PRIORITY_USER);
 
     // Initial update and start periodic updates
     on_timeout(NULL);

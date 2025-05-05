@@ -6,6 +6,9 @@
 #include <stdlib.h> // For malloc, free
 
 #include <ctype.h> // For isspace()
+#define MAX_PROCESSES 10
+
+
 
 void trim(char* str) {
     char* end;
@@ -48,6 +51,9 @@ typedef struct PCB {
     int memoryUpperBound;       // End of memory allocation         
     } PCB;
 
+    #define MAX_PROCESSES 10
+PCB processTable[MAX_PROCESSES];
+int processCount = 0;
 typedef struct {
     int pid;
     int priority;
@@ -82,6 +88,7 @@ Mutex mutex_file;
 
 Queue readyQueue;
 PCB* runningProcess = NULL;
+PCB* AllProcess = NULL;
 int quantum = 2;
 int quantumCounter = 0;
 
@@ -588,6 +595,10 @@ void printReadyQueue() {
     }
 }
 
+void printSchedulerName() {
+    printf("🔄 Current Scheduler: %s\n", schedulerName);
+}
+
 
 
 void printPendingProcesses() {
@@ -599,6 +610,81 @@ void printPendingProcesses() {
     proc->filename, proc->isCreated ? "yes" : "no");
     }
     }
+
+// You might want to create a function to set the scheduler name
+// This can be called whenever you change scheduling algorithms
+void setSchedulerName(const char* name) {
+    strncpy(schedulerName, name, sizeof(schedulerName) - 1);
+    schedulerName[sizeof(schedulerName) - 1] = '\0';
+}
+void printAllProcesses() {
+    printf("\n=== PROCESS LIST ===\n");
+    printf("%-10s %-15s %-10s %-25s %-15s\n", 
+           "PID", "State", "Priority", "Memory (Lower-Upper)", "PC");
+    printf("-------------------------------------------------------\n");
+    
+    int processFound = 0;
+    
+    // Print currently running process (if any)
+    if (runningProcess != NULL) {
+        printf("%-10d %-15s %-10d %-10d-%-12d %-15d\n", 
+               runningProcess->pid, 
+               "Running", 
+               runningProcess->priority, 
+               runningProcess->memoryLowerBound, 
+               runningProcess->memoryUpperBound,
+               runningProcess->programCounter);
+        processFound = 1;
+    }
+    
+    // Print processes in ready queue
+    if (readyQueue.size > 0) {
+        int index = readyQueue.front;
+        int count = 0;
+        
+        while (count < readyQueue.size) {
+            PCB* process = readyQueue.items[index];
+            printf("%-10d %-15s %-10d %-10d-%-12d %-15d\n", 
+                   process->pid, 
+                   "Ready", 
+                   process->priority, 
+                   process->memoryLowerBound, 
+                   process->memoryUpperBound,
+                   process->programCounter);
+            
+            index = (index + 1) % MAX_QUEUE_SIZE; // Circular queue navigation
+            count++;
+            processFound = 1;
+        }
+    }
+    
+    // Print processes in blocked queue
+    if (globalBlockedQueue.size > 0) {
+        int index = globalBlockedQueue.front;
+        int count = 0;
+        
+        while (count < globalBlockedQueue.size) {
+            PCB* process = globalBlockedQueue.items[index];
+            printf("%-10d %-15s %-10d %-10d-%-12d %-15d\n", 
+                   process->pid, 
+                   "Blocked", 
+                   process->priority, 
+                   process->memoryLowerBound, 
+                   process->memoryUpperBound,
+                   process->programCounter);
+            
+            index = (index + 1) % MAX_QUEUE_SIZE; // Circular queue navigation
+            count++;
+            processFound = 1;
+        }
+    }
+    
+    if (!processFound) {
+        printf("No active processes found.\n");
+    }
+    
+    printf("===================\n\n");
+}
 
 void passTurn(){
     printf("\n⏱ Clock Cycle: %d\n", clockCycle);
@@ -618,16 +704,18 @@ if (strcmp(schedulerName, "firstComeFirstServe") == 0) {
 printPendingProcesses();
 printMemory();
 printReadyQueue();
+printAllProcesses();
 // 3. Increment global clock
 clockCycle++;}
+
+
     
 
 void create_gui();  // Forward declaration
 
 int main()
 {
-    strcpy(schedulerName, "firstComeFirstServe");  // Set the scheduler name
-
+    setSchedulerName("roundRobin");
     initQueue(&readyQueue);  // ✅ Initialize the queue first
     initQueue(&globalBlockedQueue);  // ✅ Initialize the global blocked queue
     initializeMutexes();  // ✅ Initialize mutexes
@@ -644,7 +732,7 @@ int main()
         passTurn();
     }
 
-   
+    printSchedulerName();
     printPendingProcesses();
 
     create_gui(); 
