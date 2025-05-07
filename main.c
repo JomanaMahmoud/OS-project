@@ -6,6 +6,7 @@
 #include <stdlib.h> // For malloc, free
 
 #include <ctype.h> // For isspace()
+#include <stdbool.h> // For bool type
 
 void trim(char* str) {
     char* end;
@@ -27,6 +28,7 @@ void trim(char* str) {
     *(end + 1) = '\0';
 }
 
+typedef enum {New, READY, RUNNING, BLOCKED ,TERMINATED} ProcessState;
 
 typedef struct {
     char name[32];        // "Instruction", "PID", etc.
