@@ -817,17 +817,87 @@ void printPendingProcesses() {
     }
     }
 
+    void printAllProcesses() {
+        printf("\n=== PROCESS LIST ===\n");
+        printf("%-10s %-10s %-10s %-10s %-15s %-15s\n", 
+               "PID", "State", "Priority", "Memory Lower", "Mempory Upper", "PC");
+        printf("-------------------------------------------------------\n");
+        
+        int processFound = 0;
+        
+        // Print currently running process (if any)
+        if (runningProcess != NULL) {
+            printf("%-10d %-15s %-10d %-10d-%-12d %-15d\n", 
+                   runningProcess->pid, 
+                   "Running", 
+                   runningProcess->priority, 
+                   runningProcess->memoryLowerBound, 
+                   runningProcess->memoryUpperBound,
+                   runningProcess->programCounter);
+            processFound = 1;
+        }
+        
+        // Print processes in ready queue
+        if (readyQueue.size > 0) {
+            int index = readyQueue.front;
+            int count = 0;
+            
+            while (count < readyQueue.size) {
+                PCB* process = readyQueue.items[index];
+                printf("%-10d %-15s %-10d %-10d-%-12d %-15d\n", 
+                       process->pid, 
+                       "Ready", 
+                       process->priority, 
+                       process->memoryLowerBound, 
+                       process->memoryUpperBound,
+                       process->programCounter);
+                
+                index = (index + 1) % MAX_QUEUE_SIZE; // Circular queue navigation
+                count++;
+                processFound = 1;
+            }
+        }
+        
+        // Print processes in blocked queue
+        if (globalBlockedQueue.size > 0) {
+            int index = globalBlockedQueue.front;
+            int count = 0;
+            
+            while (count < globalBlockedQueue.size) {
+                PCB* process = globalBlockedQueue.items[index];
+                printf("%-10d %-15s %-10d %-10d-%-12d %-15d\n", 
+                       process->pid, 
+                       "Blocked", 
+                       process->priority, 
+                       process->memoryLowerBound, 
+                       process->memoryUpperBound,
+                       process->programCounter);
+                
+                index = (index + 1) % MAX_QUEUE_SIZE; // Circular queue navigation
+                count++;
+                processFound = 1;
+            }
+        }
+        
+        if (!processFound) {
+            printf("No active processes found.\n");
+        }
+        
+        printf("===================\n\n");
+    }
+    
+
 void passTurn(){
 
     printf("\n⏱️ Clock Cycle: %d\n", clockCycle);
     // 1. Check and create new processes if their arrival time is met
     checkArrivals(clockCycle);
-printQueue(&globalBlockedQueue);
-printReadyQueue();
-printQueue(L1);
-printQueue(L2);
-printQueue(L3);
-printQueue(L4);
+// printQueue(&globalBlockedQueue);
+// printReadyQueue();
+// printQueue(L1);
+// printQueue(L2);
+// printQueue(L3);
+// printQueue(L4);
 
 // 2. Call the appropriate scheduler for this clock tick
 if (strcmp(schedulerName, "firstComeFirstServe") == 0) {
@@ -839,16 +909,26 @@ if (strcmp(schedulerName, "firstComeFirstServe") == 0) {
 } else {
     printf("⚠️  Unknown scheduler: %s\n", schedulerName);
 }
-// printPendingProcesses();
-// printMemory();
-// printReadyQueue();
-// printAllProcesses();
-// 3. Increment global clock
-clockCycle++;}
-
-
-// 3. Increment global clock
+printPendingProcesses();
+printMemory();
+printReadyQueue();
+printAllProcesses();
+//3. Increment global clock
 clockCycle++;
+}
+
+
+void printSchedulerName() {
+    printf("🔄 Current Scheduler: %s\n", schedulerName);
+}
+
+
+
+// You might want to create a function to set the scheduler name
+// This can be called whenever you change scheduling algorithms
+void setSchedulerName(const char* name) {
+    strncpy(schedulerName, name, sizeof(schedulerName) - 1);
+    schedulerName[sizeof(schedulerName) - 1] = '\0';
 }
     
 
