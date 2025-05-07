@@ -4,7 +4,7 @@
 #include <stdio.h>  // For FILE, fopen, etc.
 #include <string.h>
 #include <stdlib.h> // For malloc, free
-
+#include "dashboard.h"
 #include <ctype.h> // For isspace()
 #include <stdbool.h> // For bool type
 

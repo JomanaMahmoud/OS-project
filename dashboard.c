@@ -24,7 +24,7 @@ extern int clockCycle;
 extern int pendingCount;
 extern Queue readyQueue;
 extern PCB* runningProcess;
-extern struct Queue globalBlockedQueue;
+extern Queue globalBlockedQueue;
 
 typedef struct {
     int pid;
@@ -59,7 +59,7 @@ static GtkTextBuffer *processes_list_buffer;
 // Function declarations
 void printAllProcesses();
 void printReadyQueue();
-void printBlockedQueue(struct Queue* q);
+void printQueue(Queue* queue);
 void printPendingProcesses();
 
 // Helper function to create styled labels
@@ -139,7 +139,7 @@ void capture_blocked_queue_output() {
     stdout = temp_file;
     
     // Print blocked queue info
-    printBlockedQueue(&globalBlockedQueue);
+    printQueue(&globalBlockedQueue);
     
     fflush(stdout);
     stdout = original_stdout;
