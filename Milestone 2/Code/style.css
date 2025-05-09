@@ -1,0 +1,171 @@
+/* General Window Background */
+window {
+  background-color: #252525;
+  color: #ffffff;
+}
+
+/* Tabs container (Notebook) */
+notebook {
+  background-color: #252525;
+}
+
+/* Individual Tabs */
+notebook tab {
+  background-color: #252525;
+  color: #ffffff;
+  border: 1px solid #444444;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 5px 10px;
+}
+
+notebook tab:hover {
+  background-color: #2f2f2f;
+}
+
+notebook tab:active,
+notebook tab:selected {
+  background-color: #3a3a3a;
+}
+
+/* Dashboard Title */
+#title-label {
+  font-family: 'Ubuntu', 'Roboto', sans-serif;
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 20px;
+}
+
+/* Data Labels */
+#data-label {
+  font-family: 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 16px;
+  color: #e0e0e0;
+  background-color: rgba(30, 30, 30, 0.85);
+  border-radius: 8px;
+  padding: 8px 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  margin: 5px 0;
+}
+
+/* Section Titles */
+#queue-title-label {
+  font-family: 'Ubuntu', 'Roboto', sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  color: #8ab4f8;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+/* Text Views (Queues, Lists) */
+textview {
+  font-family: 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 14px;
+  color: #e0e0e0;
+  background-color: rgba(20, 20, 20, 0.8);
+  border-radius: 10px;
+  border: 1px solid #444444;
+  padding: 5px;
+}
+
+textview text {
+  background-color: transparent;
+  color: #e0e0e0;
+}
+
+/* Scrollbars */
+scrollbar {
+  background-color: rgba(40, 40, 40, 0.6);
+  border-radius: 8px;
+}
+
+scrollbar slider {
+  background-color: rgba(138, 180, 248, 0.7);
+  border-radius: 6px;
+  min-width: 8px;
+  min-height: 8px;
+}
+
+scrollbar slider:hover {
+  background-color: rgba(138, 180, 248, 0.9);
+}
+
+/* Special accents for queues */
+textview.running-process {
+  border: 2px solid #4caf50;
+}
+
+textview.ready-queue {
+  border: 2px solid #2196f3;
+}
+
+textview.blocked-queue {
+  border: 2px solid #ff9800;
+}
+
+/* Buttons with black text */
+button {
+  background-color: #3a3a3a;
+  color: #000000;
+  border-radius: 5px;
+  border: none;
+  padding: 8px 15px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: #4a4a4a;
+}
+
+button:active {
+  background-color: #555555;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Style for dropdown text */
+combobox text,
+combobox entry,
+combobox {
+    color: black; /* Set text color to black */
+    background-color: white; /* Optional: Set background color to white for better contrast */
+}
+
+/* Style for dropdown menu items */
+combobox popup menuitem,
+combobox popup {
+    color: black; /* Set menu item text color to black */
+    background-color: white; /* Optional: Set menu item background color to white */
+}
+
+/* Ensure the dropdown button text is black */
+combobox button {
+    color: black;
+    background-color: white;
+}
+
+/* Style for the memory grid */
+#memory-grid {
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+/* Style for column headers */
+.header-label {
+    font-weight: bold;
+    color: #333;
+    background-color: #eaeaea;
+    padding: 5px;
+    border-bottom: 1px solid #ccc;
+}
+
+/* Style for memory cell labels */
+.cell-label {
+    padding: 5px;
+    color: #555;
+    border-bottom: 1px solid #ddd;
+}
